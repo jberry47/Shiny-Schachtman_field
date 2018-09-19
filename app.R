@@ -10,6 +10,7 @@ library(stringr)
 library(shinyjs)
 library(DT)
 library(ggplot2)
+library(deldir)
 
 
 #setwd("/media/jberry/Extra Drive 1/Danforth/16S_Bacteria/Field/Shiny")
@@ -55,38 +56,68 @@ ui <- dashboardPage(skin="purple",
                                       color: red;
                                       }"
           )),
-          tabsetPanel(
-            tabPanel("Field Soil",
-                     fluidRow(
-                       box(width=3,title = "Subsetting Data",solidHeader = T,status = 'success',collapsible = TRUE,
-                           selectInput("which_field", width = 300,
-                                       label = "Which Field: ",
-                                       choices = c("Low N","Full N","WS","WW"),
-                                       selected = "Low N"),
-                           uiOutput("ui_which_date"),
-                           hr(),
-                           actionButton("use_config","Use these samples")
-                       )
-                     ),
-                     tabsetPanel(
-                       tabPanel("Measurement Associations",
-                         uiOutput("corrplot"),
-                         uiOutput("scatterplot")
-                       ),
-                       tabPanel("Spatial Analysis",
-                         uiOutput("plots")
-                       ),
-                       tabPanel("Beta Diversity",
-                         uiOutput("bd_ui_click"),
-                         uiOutput("bd_ui_raster")
-                       )
-                     )
-            )
-          )
-    )
+          uiOutput("login"),
+          uiOutput("body")
+                    )
 )
 
 server <- function(input, output) {
+  output$login <- renderUI({
+    showModal(modalDialog(easyClose = TRUE,footer = NULL,
+                          passwordInput("password", "Password:"),
+                          actionButton("go", "Go")
+    ))
+  })
+  
+  cc_auth <- reactiveValues(data="NO")
+  
+  observeEvent(input$go,{
+    isolate({
+      pass <- input$password
+    })
+    if(pass == "test"){
+      cc_auth$data <- "YES"
+      #      obs1$suspend()
+      removeModal()
+    }else{
+      cc_auth$data <- "NO"
+    }
+  })
+  
+  output$body <- renderUI({
+    if(cc_auth$data == "YES"){
+      fluidRow(
+        tabsetPanel(
+          tabPanel("Field Soil",
+                   fluidRow(
+                     box(width=3,title = "Subsetting Data",solidHeader = T,status = 'success',collapsible = TRUE,
+                         selectInput("which_field", width = 300,
+                                     label = "Which Field: ",
+                                     choices = c("Low N","Full N","WS","WW"),
+                                     selected = "Low N"),
+                         uiOutput("ui_which_date"),
+                         hr(),
+                         actionButton("use_config","Use these samples")
+                     )
+                   ),
+                   tabsetPanel(
+                     tabPanel("Measurement Associations",
+                              uiOutput("corrplot"),
+                              uiOutput("scatterplot")
+                     ),
+                     tabPanel("Spatial Analysis",
+                              uiOutput("plots")
+                     ),
+                     tabPanel("Beta Diversity",
+                              uiOutput("bd_ui_click"),
+                              uiOutput("bd_ui_raster")
+                     )
+                   )
+          )
+        ) 
+      )
+    }
+  })
   v <- reactiveValues(data=NULL)
   vca <- reactiveValues(data=NULL)
   r <- reactiveValues(data=NULL)
